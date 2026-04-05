@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Folio Studios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      background: #FFFFFF;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Lora', serif;
+      caret-color: transparent;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='22' viewBox='0 0 18 22'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23F72585'/%3E%3Cstop offset='100%25' stop-color='%23E91E7A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M1 1 L1 20 L8 12 L17 11 Z' fill='url(%23g)' stroke='%23C4176A' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E") 1 1, default;
+    }
+
+    /* ── Grid Container — fills entire viewport ── */
+    #grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: grid;
+      z-index: 1;
+    }
+
+    /* ── Grid Squares ── */
+    .sq {
+      background: #FFFFFF;
+      border: 1px solid #F6F3F3;
+      cursor: inherit;
+      position: relative;
+      z-index: 1;
+      will-change: transform;
+    }
+
+    .sq.hovered {
+      border-color: #5DA5F8;
+      border-width: 2px;
+      transform: scale(1.12);
+      box-shadow: 0 0 8px rgba(93, 165, 248, 0.5);
+      z-index: 2;
+    }
+
+    .sq.colored {
+      border-color: #F6F3F3;
+    }
+
+    .sq.colored::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.59;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 100px 100px;
+    }
+
+    /* ── Color deck squares (inside grid) ── */
+    .sq.deck {
+      position: relative;
+    }
+
+    .sq.deck::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.59;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 100px 100px;
+    }
+
+    /* ── Text Area ── */
+    #text-area {
+      position: absolute;
+      z-index: 10;
+      user-select: none;
+      pointer-events: none;
+      caret-color: transparent;
+    }
+
+    #text-area .line {
+      display: block;
+      font-family: 'Lora', serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: #000000;
+      line-height: 1.4;
+    }
+
+    #text-area .line-with-logo {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin-top: 19px; /* half a square higher */
+      margin-left: 73px; /* 2 squares minus 1/4 square */
+    }
+
+    #text-area .logo-wrap {
+      display: inline-block;
+      width: 14px;
+      flex-shrink: 0;
+      margin-bottom: 1px;
+    }
+
+    #text-area .logo-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ── Hidden Text ("so keep playing.") ── */
+    #hidden-text {
+      position: absolute;
+      z-index: 5;
+      user-select: none;
+      pointer-events: none;
+      font-family: 'Lora', serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: #000000;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+
+    #hidden-text.revealed {
+      opacity: 1;
+    }
+
+    .cover-sq {
+      position: absolute;
+      width: 42px;
+      height: 38px;
+      background: #FFFFFF;
+      border: 1px solid #F6F3F3;
+      z-index: 6;
+      transition: none;
+    }
+
+    .cover-sq.glow {
+      border-color: #5DA5F8;
+      border-width: 2px;
+      box-shadow: 0 0 8px rgba(93, 165, 248, 0.5);
+      transform: scale(1.12);
+      z-index: 7;
+    }
+
+    .cover-sq.gone {
+      display: none;
+    }
+
+    /* ── Video Wrappers ── */
+    .video-wrap {
+      position: absolute;
+      width: 254px;
+      height: 150px;
+      z-index: 20;
+      cursor: grab;
+      transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+      box-shadow: 2px 2px 4px rgba(119, 109, 109, 0.68);
+    }
+
+    .video-wrap:hover {
+      transform: scale(1.06);
+      box-shadow: 2px 2px 4px rgba(93, 165, 248, 0.68);
+      z-index: 30;
+    }
+
+    .video-wrap.dragging {
+      cursor: grabbing;
+      z-index: 40;
+      transition: none;
+    }
+
+    .video-wrap video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    /* ── Resize Handles ── */
+    .resize-handle {
+      position: absolute;
+      z-index: 5;
+    }
+
+    .resize-handle.nw { top: -4px; left: -4px; width: 10px; height: 10px; cursor: nw-resize; }
+    .resize-handle.ne { top: -4px; right: -4px; width: 10px; height: 10px; cursor: ne-resize; }
+    .resize-handle.sw { bottom: -4px; left: -4px; width: 10px; height: 10px; cursor: sw-resize; }
+    .resize-handle.se { bottom: -4px; right: -4px; width: 10px; height: 10px; cursor: se-resize; }
+    .resize-handle.n { top: -3px; left: 10px; right: 10px; height: 6px; cursor: n-resize; }
+    .resize-handle.s { bottom: -3px; left: 10px; right: 10px; height: 6px; cursor: s-resize; }
+    .resize-handle.w { left: -3px; top: 10px; bottom: 10px; width: 6px; cursor: w-resize; }
+    .resize-handle.e { right: -3px; top: 10px; bottom: 10px; width: 6px; cursor: e-resize; }
+  </style>
+</head>
+<body>
+
+  <script>
+    // ═══════════════════════════════════════════
+    // AUDIO — note sequence for color clicks
+    // ═══════════════════════════════════════════
+
+    // The 16-note melody sequence — each position gets its own Audio object
+    const MELODY_NOTES = ['C5','C5','E5','D5','E5','F5','F5','D5','G5','E5','C5','A5','G5','D5','F5','E5'];
+    const melodySounds = MELODY_NOTES.map(note => {
+      const a = new Audio('assets/' + note + '.mp3');
+      a.preload = 'auto';
+      a.load();
+      return a;
+    });
+    let melodyIndex = 0;
+
+    // Remove color sound
+    const removeSound = new Audio('assets/sound for click get rid of color.mp3');
+    removeSound.preload = 'auto';
+    removeSound.load();
+
+    function playAdd() {
+      const sound = melodySounds[melodyIndex % melodySounds.length];
+      sound.currentTime = 0;
+      sound.play().catch(() => {});
+      melodyIndex++;
+    }
+
+    function playRemove() {
+      removeSound.currentTime = 0;
+      removeSound.play().catch(() => {});
+      // Reset melody sequence when removing a color
+      melodyIndex = 0;
+    }
+
+    // ═══════════════════════════════════════════
+    // CONSTANTS
+    // ═══════════════════════════════════════════
+    const SQ_W = 42;
+    const SQ_H = 38;
+
+    // Carved-out text area (0-indexed): cols 9–15, rows 5–7
+    const TEXT_COL_START = 9;
+    const TEXT_COL_END = 15;
+    const TEXT_ROW_START = 5;
+    const TEXT_ROW_END = 7;
+
+    // Color palette
+    const PALETTE = ['#8B55E8', '#4C882B', '#334CC9', '#E4DD14', '#BF0707', '#D78144', '#CE74D7'];
+
+    // Video base URL — hosted on Cloudflare R2
+    const VIDEO_BASE = 'https://pub-9edb3834da0b4089aca26644f37b8c9d.r2.dev';
+
+    // Video layout — scattered, slight spread from original
+    const VIDEO_LAYOUT = [
+      { file: 'dare-market.mp4',         col: 32, row: 5,  w: 254, h: 150 },
+      { file: 'dupe-bar.mp4',            col: 44, row: 4,  w: 254, h: 150 },   // down 1
+      { file: 'brett-logsdon.mp4',        col: 25, row: 8,  w: 254, h: 150 },
+      { file: 'dupe-house-tour.mp4',      col: 36, row: 10, w: 340, h: 200 },
+      { file: 'dupe-subway.mp4',          col: 48, row: 9,  w: 254, h: 150, oy: 29, ox: -21 },   // down 3/4, left 1.5
+      { file: 'dupe-police-station.mp4',  col: 29, row: 14, w: 170, h: 100 },
+      { file: 'forum.mp4',                col: 35, row: 17, w: 340, h: 220 },
+      { file: 'kled-1.mp4',               col: 47, row: 17, w: 320, h: 189, oy: -29 }, // bigger, up 3/4 sq
+      { file: 'kled-2.mp4',               col: 24, row: 21, w: 254, h: 150 },   // swapped with street
+      { file: 'street.mp4',               col: 50, row: 22, w: 254, h: 150 },   // right 2
+      { file: 'corvo-redemption.mp4',     col: 29, row: 27, w: 254, h: 150 },   // nudged down 1
+      { file: 'brett-logsdon.mp4',         col: 43, row: 27, w: 380, h: 200, ox: -32 },   // left 1 3/4 sq
+    ];
+
+    // ═══════════════════════════════════════════
+    // DYNAMIC GRID — fills entire viewport
+    // ═══════════════════════════════════════════
+    let COLS, ROWS;
+    let grid;
+
+    function getViewport() {
+      const w = window.innerWidth || document.documentElement.clientWidth || screen.width || 1920;
+      const h = window.innerHeight || document.documentElement.clientHeight || screen.height || 1080;
+      return { w, h };
+    }
+
+    function buildGrid() {
+      // Remove old grid if exists
+      if (grid) grid.remove();
+
+      // Calculate how many cols/rows needed to fill viewport
+      const vp = getViewport();
+      COLS = Math.ceil(vp.w / SQ_W) + 1;  // +1 to ensure full coverage
+      ROWS = Math.ceil(vp.h / SQ_H) + 1;
+
+      grid = document.createElement('div');
+      grid.id = 'grid';
+      grid.style.gridTemplateColumns = `repeat(${COLS}, ${SQ_W}px)`;
+      grid.style.gridTemplateRows = `repeat(${ROWS}, ${SQ_H}px)`;
+      grid.style.width = (COLS * SQ_W) + 'px';
+      grid.style.height = (ROWS * SQ_H) + 'px';
+
+      // Color deck: bottom 7 rows of column 0, raised 2 squares
+      const deckStartRow = ROWS - 9;
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          // Skip carved-out text area
+          if (c >= TEXT_COL_START && c <= TEXT_COL_END &&
+              r >= TEXT_ROW_START && r <= TEXT_ROW_END) {
+            const placeholder = document.createElement('div');
+            placeholder.style.visibility = 'hidden';
+            grid.appendChild(placeholder);
+            continue;
+          }
+
+          // Skip hidden text cover area (cols 13–16, row 16) — covered by overlay squares
+          if (c >= HIDDEN_COL && c < HIDDEN_COL + COVER_COUNT && r === HIDDEN_ROW) {
+            const placeholder = document.createElement('div');
+            placeholder.style.visibility = 'hidden';
+            grid.appendChild(placeholder);
+            continue;
+          }
+
+          // Color deck squares — column 0, 7 squares starting at deckStartRow
+          if (c === 0 && r >= deckStartRow && (r - deckStartRow) < PALETTE.length) {
+            const deckIndex = r - deckStartRow;
+            const sq = document.createElement('div');
+            sq.className = 'sq deck';
+            sq.style.background = PALETTE[deckIndex];
+            sq.dataset.col = c;
+            sq.dataset.row = r;
+            sq.dataset.deck = 'true';
+            grid.appendChild(sq);
+            continue;
+          }
+
+          const sq = document.createElement('div');
+          sq.className = 'sq';
+          sq.dataset.col = c;
+          sq.dataset.row = r;
+          grid.appendChild(sq);
+        }
+      }
+
+      document.body.insertBefore(grid, document.body.firstChild);
+
+      // Click-to-color (event delegation) — mousedown for instant response
+      grid.addEventListener('mousedown', (e) => {
+        const sq = e.target.closest('.sq');
+        if (!sq || sq.dataset.deck) return;
+
+        if (sq.classList.contains('colored')) {
+          playRemove();
+          sq.classList.remove('colored');
+          sq.style.background = '#FFFFFF';
+        } else {
+          playAdd();
+          const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+          sq.style.background = color;
+          sq.classList.add('colored');
+          // Trigger hidden text reveal on first color click
+          if (!firstClickFired) triggerRevealAnimation();
+        }
+      });
+
+      // Reposition text, hidden text, and videos
+      positionTextArea();
+      positionHiddenText();
+      positionVideos();
+    }
+
+    // ═══════════════════════════════════════════
+    // TEXT AREA
+    // ═══════════════════════════════════════════
+    const textArea = document.createElement('div');
+    textArea.id = 'text-area';
+    textArea.innerHTML = `
+      <span class="line">for the kids who wanna play.</span>
+      <div class="line-with-logo">
+        <span class="line">until the world hears us.</span>
+        <div class="logo-wrap"><img src="assets/images/logo-clean.png" alt="f"></div>
+      </div>
+    `;
+    document.body.appendChild(textArea);
+
+    function positionTextArea() {
+      if (!grid) return;
+      const gridRect = grid.getBoundingClientRect();
+      textArea.style.left = (gridRect.left + TEXT_COL_START * SQ_W + 19) + 'px';
+      textArea.style.top = (gridRect.top + TEXT_ROW_START * SQ_H + 29) + 'px';
+    }
+
+    // ═══════════════════════════════════════════
+    // HIDDEN TEXT — "so keep playing." reveal
+    // ═══════════════════════════════════════════
+    const HIDDEN_COL = 13;
+    const HIDDEN_ROW = 16;
+    const COVER_COUNT = 6; // 6 squares covering cols 13–18
+
+    const hiddenText = document.createElement('div');
+    hiddenText.id = 'hidden-text';
+    hiddenText.textContent = 'so keep playing to fill the page.';
+    document.body.appendChild(hiddenText);
+
+    const coverSquares = [];
+    for (let i = 0; i < COVER_COUNT; i++) {
+      const sq = document.createElement('div');
+      sq.className = 'cover-sq';
+      document.body.appendChild(sq);
+      coverSquares.push(sq);
+    }
+
+    let firstClickFired = false;
+
+    function positionHiddenText() {
+      if (!grid) return;
+      const gridRect = grid.getBoundingClientRect();
+      // Position text inside the covered area, vertically centered in the row
+      hiddenText.style.left = (gridRect.left + HIDDEN_COL * SQ_W + 6) + 'px';
+      hiddenText.style.top = (gridRect.top + HIDDEN_ROW * SQ_H + 10) + 'px';
+
+      // Position cover squares
+      coverSquares.forEach((sq, i) => {
+        sq.style.left = (gridRect.left + (HIDDEN_COL + i) * SQ_W) + 'px';
+        sq.style.top = (gridRect.top + HIDDEN_ROW * SQ_H) + 'px';
+      });
+    }
+
+    function triggerRevealAnimation() {
+      if (firstClickFired) return;
+      firstClickFired = true;
+
+      const cycleTime = 167; // ~167ms per square × 6 ≈ 1s total
+
+      // Show text immediately (still hidden behind cover squares)
+      hiddenText.style.opacity = '1';
+      hiddenText.style.transition = 'none';
+
+      coverSquares.forEach((sq, i) => {
+        // Glow on
+        setTimeout(() => {
+          sq.classList.add('glow');
+        }, i * cycleTime);
+
+        // Glow off + instantly remove to reveal text
+        setTimeout(() => {
+          sq.remove();
+        }, (i + 1) * cycleTime);
+      });
+
+      // Clean up after all done
+      setTimeout(() => {
+        hiddenText.classList.add('revealed');
+      }, COVER_COUNT * cycleTime + 50);
+    }
+
+    // ═══════════════════════════════════════════
+    // VIDEOS — Draggable + Resizable
+    // ═══════════════════════════════════════════
+    const videoElements = [];
+
+    VIDEO_LAYOUT.forEach((v, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'video-wrap';
+      wrap.dataset.index = i;
+      wrap.style.width = v.w + 'px';
+      wrap.style.height = v.h + 'px';
+
+      const video = document.createElement('video');
+      video.src = VIDEO_BASE + '/' + v.file;
+      video.muted = true;
+      video.autoplay = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.setAttribute('playsinline', '');
+      video.preload = 'auto';
+      wrap.appendChild(video);
+
+      // Resize handles
+      ['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se'].forEach(dir => {
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle ' + dir;
+        handle.dataset.dir = dir;
+        wrap.appendChild(handle);
+      });
+
+      document.body.appendChild(wrap);
+
+      videoElements.push({
+        wrap,
+        video,
+        defaultX: v.col * SQ_W + (v.ox || 0),
+        defaultY: v.row * SQ_H + (v.oy || 0),
+      });
+    });
+
+    function positionVideos() {
+      if (!grid) return;
+      const gridRect = grid.getBoundingClientRect();
+      videoElements.forEach(v => {
+        if (!v.wrap.dataset.customPos) {
+          v.wrap.style.left = (gridRect.left + v.defaultX) + 'px';
+          v.wrap.style.top = (gridRect.top + v.defaultY) + 'px';
+        }
+      });
+    }
+
+    // ── Drag logic ──
+    let dragTarget = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    document.addEventListener('mousedown', (e) => {
+      const wrap = e.target.closest('.video-wrap');
+      if (!wrap) return;
+
+      const handle = e.target.closest('.resize-handle');
+      if (handle) {
+        startResize(e, wrap, handle.dataset.dir);
+        return;
+      }
+
+      dragTarget = wrap;
+      const rect = wrap.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      wrap.classList.add('dragging');
+      wrap.dataset.customPos = 'true';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (dragTarget) {
+        dragTarget.style.left = (e.clientX - dragOffsetX) + 'px';
+        dragTarget.style.top = (e.clientY - dragOffsetY) + 'px';
+      }
+      if (resizeState) {
+        doResize(e);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (dragTarget) {
+        dragTarget.classList.remove('dragging');
+        dragTarget = null;
+      }
+      if (resizeState) {
+        resizeState.wrap.classList.remove('dragging');
+        resizeState = null;
+      }
+    });
+
+    // ── Resize logic ──
+    let resizeState = null;
+
+    function startResize(e, wrap, dir) {
+      const rect = wrap.getBoundingClientRect();
+      resizeState = {
+        wrap, dir,
+        startX: e.clientX, startY: e.clientY,
+        startW: rect.width, startH: rect.height,
+        startLeft: rect.left, startTop: rect.top,
+      };
+      wrap.classList.add('dragging');
+      wrap.dataset.customPos = 'true';
+      e.preventDefault();
+    }
+
+    function doResize(e) {
+      const s = resizeState;
+      const dx = e.clientX - s.startX;
+      const dy = e.clientY - s.startY;
+      const dir = s.dir;
+
+      let newW = s.startW, newH = s.startH;
+      let newLeft = s.startLeft, newTop = s.startTop;
+
+      if (dir.includes('e')) newW = Math.max(80, s.startW + dx);
+      if (dir.includes('w')) { newW = Math.max(80, s.startW - dx); newLeft = s.startLeft + dx; }
+      if (dir.includes('s')) newH = Math.max(50, s.startH + dy);
+      if (dir.includes('n')) { newH = Math.max(50, s.startH - dy); newTop = s.startTop + dy; }
+
+      s.wrap.style.width = newW + 'px';
+      s.wrap.style.height = newH + 'px';
+      s.wrap.style.left = newLeft + 'px';
+      s.wrap.style.top = newTop + 'px';
+    }
+
+    // ═══════════════════════════════════════════
+    // FAST HOVER — JS-based, instant tracking
+    // ═══════════════════════════════════════════
+    let lastHovered = null;
+
+    document.addEventListener('mousemove', (e) => {
+      if (dragTarget || resizeState) return; // skip during drag/resize
+
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const sq = el && el.closest('.sq');
+
+      if (sq === lastHovered) return; // same square, skip
+
+      if (lastHovered) lastHovered.classList.remove('hovered');
+      if (sq) sq.classList.add('hovered');
+      lastHovered = sq;
+    }, { passive: true });
+
+    document.addEventListener('mouseleave', () => {
+      if (lastHovered) {
+        lastHovered.classList.remove('hovered');
+        lastHovered = null;
+      }
+    });
+
+    // ═══════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════
+    buildGrid();
+    window.addEventListener('resize', buildGrid);
+
+    // Start all videos
+    setTimeout(() => {
+      videoElements.forEach(v => v.video.play().catch(() => {}));
+    }, 100);
+  </script>
+</body>
+</html>

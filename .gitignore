@@ -1,0 +1,23 @@
+# Video files — hosted on Cloudflare R2
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Environment / credentials
+.env
+.env.*
+
+# Node
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Upload scripts (not needed in repo)
+upload-to-r2.mjs
+upload-remaining.mjs
+
+# Wrangler
+.wrangler/
